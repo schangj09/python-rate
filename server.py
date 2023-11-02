@@ -1,6 +1,6 @@
 # Python 3 server for simple token counting rate limiter
 
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 from rate_component import RateComponent
 import time
@@ -22,8 +22,6 @@ class RateComponentServer(BaseHTTPRequestHandler):
         url = urlparse(self.path)
         query = url.query
         qs = parse_qs(query)
-
-        self.component.restore()
 
         if (qs["route"] and len(qs["route"]) > 0):
             r = qs["route"][0]
@@ -49,7 +47,7 @@ class RateComponentServer(BaseHTTPRequestHandler):
             self.wfile.write(bytes("</body></html>", "utf-8"))
 
 if __name__ == "__main__":        
-    webServer = HTTPServer((hostName, serverPort), RateComponentServer)
+    webServer = ThreadingHTTPServer((hostName, serverPort), RateComponentServer)
     print("Server started http://%s:%s" % (hostName, serverPort))
 
     try:

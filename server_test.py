@@ -1,6 +1,9 @@
 # test commands for exercising server
 import urllib.request
 import time
+from importlib import reload
+
+import rate_component
 
 
 
@@ -10,6 +13,11 @@ reload (rate_component)
 from rate_component import RateComponent
 r = RateComponent()
 for i in range(20): r.take("GET slowCall")
+
+for i in range(20):
+	time.sleep(0.5)
+	print()
+	r.take("GET slowCall")
 
 
 ###########
