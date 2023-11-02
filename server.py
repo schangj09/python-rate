@@ -19,19 +19,20 @@ class RateComponentServer(BaseHTTPRequestHandler):
     ## Returns a result indicating if the route request should be accepted or rejected and 
     ## how many tokens are remaining. Returns 400 for unknown route param.
     def do_GET(self):
+        result = 0
         url = urlparse(self.path)
-        query = url.query
-        qs = parse_qs(query)
-
-        if (qs["route"] and len(qs["route"]) > 0):
-            r = qs["route"][0]
-            result = self.component.take(r)
+        if (url.path == "/take"):
+            query = url.query
+            qs = parse_qs(query)
+            if (qs["route"] and len(qs["route"]) > 0):
+                r = qs["route"][0]
+                result = self.component.take(r)
 
         if result:
             self.send_response(200)
             self.send_header("Content-type", "text/html")
             self.end_headers()
-            self.wfile.write(bytes("<html><head><title>https://pythonbasics.org</title></head>", "utf-8"))
+            self.wfile.write(bytes("<html><head><title>JS - RateLimitServer</title></head>", "utf-8"))
             self.wfile.write(bytes("<p>Request: %s</p>" % self.path, "utf-8"))
             self.wfile.write(bytes("<body>", "utf-8"))
             self.wfile.write(bytes(f"<code>{result}</code>", "utf-8"))
@@ -40,7 +41,7 @@ class RateComponentServer(BaseHTTPRequestHandler):
             self.send_response(400)
             self.send_header("Content-type", "text/html")
             self.end_headers()
-            self.wfile.write(bytes("<html><head><title>https://pythonbasics.org</title></head>", "utf-8"))
+            self.wfile.write(bytes("<html><head><title>JS - RateLimitServer</title></head>", "utf-8"))
             self.wfile.write(bytes("<p>Request: %s</p>" % self.path, "utf-8"))
             self.wfile.write(bytes("<body>", "utf-8"))
             self.wfile.write(bytes("<code>Failed - BAD REQUEST</code>", "utf-8"))

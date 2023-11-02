@@ -49,14 +49,13 @@ class RouteCounts:
 	## Decrement the available tokens and return the remaining tokens for this route.
 	## Returns -1 if there are no available tokens.
 	def take(self) -> int:
-		self.lock.acquire()
-		if self.count <= 0:
-			self.count = 0
-			return -1
-		else:
-			self.count -= 1
-			return self.count
-		self.lock.release()
+		with self.lock:
+			if self.count <= 0:
+				self.count = 0
+				return -1
+			else:
+				self.count -= 1
+				return self.count
 
 	## Method: refill
 	## Increment the available tokens by an amount based on the rate of new tokens, the maximum 
@@ -67,26 +66,25 @@ class RouteCounts:
 	##
 	## To do: handle synchronization for multi-threaded server calls.
 	def refill(self):
-		self.lock.acquire()
-		now = int(time.time() * 1000)
-		# special case if tokens is full, then just update lastRestore
-		if (self.count == self.maxCount):
-			self.lastRestore = now - now%self.refillMillis
-		else:
-			diff = now - self.lastRestore
-			# increment is the number of tokens to add to the count
-			increment = int(diff/self.refillMillis)
-			if self.count + increment > self.maxCount:
-				increment = self.maxCount - self.count
-
-			print(f'now: {now}, diff: {diff}, increment:{increment}, oldcount:{self.count}')
-			# only update lastRestore if the count changes so we accumulate time in case the polling
-			# is faster than the rate
-			if increment > 0:
+		with self.lock:
+			now = int(time.time() * 1000)
+			# special case if tokens is full, then just update lastRestore
+			if (self.count == self.maxCount):
 				self.lastRestore = now - now%self.refillMillis
-			self.count = self.count + increment
-			print(f'count:{self.count}, lastRestore:{self.lastRestore}')
-		self.lock.release()
+			else:
+				diff = now - self.lastRestore
+				# increment is the number of tokens to add to the count
+				increment = int(diff/self.refillMillis)
+				if self.count + increment > self.maxCount:
+					increment = self.maxCount - self.count
+
+				print(f'now: {now}, diff: {diff}, increment:{increment}, oldcount:{self.count}')
+				# only update lastRestore if the count changes so we accumulate time in case the polling
+				# is faster than the rate
+				if increment > 0:
+					self.lastRestore = now - now%self.refillMillis
+				self.count = self.count + increment
+				print(f'count:{self.count}, lastRestore:{self.lastRestore}')
 
 ## Class: RateComponent
 ## Class that provides a rate counter and take method for every configured route.
