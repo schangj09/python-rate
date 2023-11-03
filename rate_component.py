@@ -43,7 +43,7 @@ class RouteCounts:
 		self.refillMillis = int(Const.MILLIS_PER_MINUTE.value / refillRate)
 		now = int(time.time() * 1000)
 		self.start = now - now%self.refillMillis
-		self.lastRestore = self.start
+		self.lastRestoreTime = self.start
 
 	## Method: take
 	## Decrement the available tokens and return the remaining tokens for this route.
@@ -64,15 +64,17 @@ class RouteCounts:
 	## This can be called on a timer at any interval needed. Alternatively, refill can be called just
 	## before calling "take" to ensure the tokens are incremented whenever needed.
 	##
-	## To do: handle synchronization for multi-threaded server calls.
+	## To do: use better synchronization for multi-threading - should be able to make this work
+	## with only a "compareAndSet" method on self.count (don't need to guard on self.lastRestoreTime
+	## because any competing threads would set it to the same value anyway)
 	def refill(self):
 		with self.lock:
 			now = int(time.time() * 1000)
 			# special case if tokens is full, then just update lastRestore
 			if (self.count == self.maxCount):
-				self.lastRestore = now - now%self.refillMillis
+				self.lastRestoreTime = now - now%self.refillMillis
 			else:
-				diff = now - self.lastRestore
+				diff = now - self.lastRestoreTime
 				# increment is the number of tokens to add to the count
 				increment = int(diff/self.refillMillis)
 				if self.count + increment > self.maxCount:
@@ -82,9 +84,9 @@ class RouteCounts:
 				# only update lastRestore if the count changes so we accumulate time in case the polling
 				# is faster than the rate
 				if increment > 0:
-					self.lastRestore = now - now%self.refillMillis
+					self.lastRestoreTime = now - now%self.refillMillis
 				self.count = self.count + increment
-				print(f'count:{self.count}, lastRestore:{self.lastRestore}')
+				print(f'count:{self.count}, lastRestore:{self.lastRestoreTime}')
 
 ## Class: RateComponent
 ## Class that provides a rate counter and take method for every configured route.
